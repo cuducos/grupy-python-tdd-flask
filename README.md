@@ -46,3 +46,81 @@ Vamos usar, nesse exercício, basicamente 2 arquivos:
 
 * `app.py`: onde criamos nossa aplicação web;;
 * `tests.py`: onde escrevemos os testes que guiarão o desenvolvimento da aplicação, e que, também, garantirão que ela funcione.
+
+
+## 2. Criando a base dos testes
+
+No arquivo `tests.py` vamos usar o módulo [unittest](https://docs.python.org/3.5/library/unittest.html), que já vem instalado por padrão no Python.
+
+Criaremos uma estrutura básica para que, toda vez que esse arquivo seja executado, o `unittest` se encarregue de encontrar todos os nossos testes e rodá-los:
+
+```python
+import unittest
+
+
+class TestFatorial(unittest.TestCase):
+
+    def test_fatorial(self):
+        self.assertEqual(fatorial(0), 1)
+        self.assertEqual(fatorial(1), 1)
+        self.assertEqual(fatorial(2), 2)
+        self.assertEqual(fatorial(3), 6)
+        self.assertEqual(fatorial(4), 24)
+        self.assertEqual(fatorial(5), 120)
+        self.assertEqual(fatorial(6), 720)
+        
+
+if __name__ == '__main__':
+    unittest.main()
+```
+
+Agora podemos rodar os testes assim:
+
+```console
+$ python testes.py
+```
+
+Veremos uma mensagem de erro, `NameError`, pois não definimos nossa função `fatorial(num)`:
+
+```
+E
+======================================================================
+ERROR: test_fatorial (__main__.TestSimples)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "tests.py", line 7, in test_fatorial
+    self.assertEqual(fatorial(0), 1)
+NameError: name 'fatorial' is not defined
+
+----------------------------------------------------------------------
+Ran 1 test in 0.001s
+
+FAILED (errors=1)
+```
+
+Tudo bem, a ideia não é brincar com matemática agora. Mas vamos criar essa função lá no `app.py` só para ver como a gente pode “integrar” esses dois arquivos — ou seja, fazer o `tests.py` testar o que está em `app.py`.
+
+Vamos adicionar essas linhas ao `app.py`:
+
+```python
+def fatorial(numero):
+    if numero in (0, 1):
+        return 1
+    return numero * fatorial(numero - 1)
+```
+
+E adicionar essa linha no topo do `tests.py`:
+
+```python
+from app import fatorial
+```
+
+Rodando os testes agora, vemos que a integração entre `app.py` e `tests.py` está funcionando:
+
+```
+.
+----------------------------------------------------------------------
+Ran 1 test in 0.000s
+
+OK
+```
