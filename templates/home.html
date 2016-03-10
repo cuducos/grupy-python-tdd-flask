@@ -1,16 +1,17 @@
 <!DOCTYPE HTML>
 <html>
   <head>
-    <title>Eduardo Cuducos</title>
+    <title>{{ perfil.nome }}</title>
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css">
   </head>
   <body>
     <div class="container">
       <div class="jumbotron">
-        <img src="https://avatars.githubusercontent.com/u/4732915?v=3&s=128" alt="Eduardo Cuducos" class="img-circle">
-        <h1>Eduardo Cuducos</h1>
-        <p>Sociólogo, geek, cozinheiro e fã de esportes.</p>
-        <p><a class="btn btn-primary btn-lg" href="http://twitter.com/cuducos" role="button">Me siga no Twitter</a></p>
+        <img src="{{ perfil.foto }}" alt="{{ perfil.nome }}" class="img-circle">
+        <h1>{{ perfil.nome }}</h1>
+        <p>{{ perfil.descricao }}</p>
+        <p><a class="btn btn-primary btn-lg" href="{{ perfil.url }}"
+            role="button">Me siga no {{ perfil.nome_url }}</a></p>
       </div>
     </div>
   </body>

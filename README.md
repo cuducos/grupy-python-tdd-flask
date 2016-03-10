@@ -443,3 +443,164 @@ Ran 6 tests in 0.024s
 
 OK
 ```
+
+
+## 5. Conteúdos dinâmicos
+
+### Passando variáveis para o contexto do template
+
+O problema da nossa página é que ela é estática. Vamos usar o Python e o Flask para que quando a gente acesse `/cuducos` a gente veja a minha página, com meus dados. Mas caso a gente acesse `/z4r4tu5tr4`, a gente o conteúdo referente ao outro Eduardo.
+
+Mas antes de mudar nossas URLS, vamos refatorar nossa aplicação e os testes tem que continuar passando. A ideia é evitar que o conteúdo esteja “fixo” no template. Vamos fazer o conteúdo ser passado pela `pagina_principal()` para o template.
+
+A ideia é extrair todo o conteúdo do nosso HTML criando um dicionário no `app.py`:
+
+```python
+CUDUCOS = {'nome': 'Eduardo Cuducos',
+           'descricao': 'Sociólogo, geek, cozinheiro e fã de esportes.',
+           'url': 'http://twitter.com/cuducos',
+           'nome_url': 'Twitter',
+           'foto': 'https://avatars.githubusercontent.com/u/4732915?v=3&s=128'}
+```
+
+E, na sequência, usar esse dicionário para passar uma variável chamada `perfil` para o contexto do template:
+
+```python
+@meu_web_app.route('/')
+def pagina_inicial():
+    return render_template('home.html', perfil=CUDUCOS)
+```
+
+Por fim, vamor utilizar, ao invés das minhas informações, a variável `perfil` no template:
+
+```html
+<!DOCTYPE HTML>
+<html>
+  <head>
+    <title>{{ perfil.nome }}</title>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css">
+  </head>
+  <body>
+    <div class="container">
+      <div class="jumbotron">
+        <img src="{{ perfil.foto }}" alt="{{ perfil.nome }}" class="img-circle">
+        <h1>{{ perfil.nome }}</h1>
+        <p>{{ perfil.descricao }}</p>
+        <p><a class="btn btn-primary btn-lg" href="{{ perfil.url }}"
+            role="button">Me siga no {{ perfil.nome_url }}</a></p>
+      </div>
+    </div>
+  </body>
+</html>
+```
+
+### Criando conteúdo dinâmico
+
+Vamos agora criar um outro dicionário para termos informações de outras pessoas. E vamos juntar todos os perfis em uma variável chamada `PERFIS`:
+
+```python
+MENDES = {'nome': 'Eduardo Mendes',
+          'descricao': 'Apaixonado por software livre e criador de lambdas.',
+          'url': 'http://github.com/z4r4tu5tr4',
+          'nome_url': 'GitHub',
+          'foto': 'https://avatars.githubusercontent.com/u/6801122?v=3&s=128'}
+
+PERFIS = {'cuducos': CUDUCOS,
+          'z4r4tu5tr4': MENDES}
+```
+
+Agora, se utilizarmos nossa `pagina_principal()` com o primeiro perfil, nossos testes passam. Podemos passar o outro perfil e ver ,no navegador, que já temos a nossa página com outras informações:
+
+```python
+@meu_web_app.route('/')
+def pagina_inicial():
+    return render_template('home.html', perfil=PERFIS['z4r4tu5tr4'])
+```
+
+Mas se rodarmos os testes assim, veremos duas falhas:
+
+```
+.F..F.
+======================================================================
+FAIL: test_content (__main__.TestHome)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "tests.py", line 19, in test_content
+    self.assertIn('<title>Eduardo Cuducos</title>', str(response_str))
+AssertionError: '<title>Eduardo Cuducos</title>' not found in '<!DOCTYPE HTML>\n<html>\n  <head>\n    <title>Eduardo Mendes</title>\n    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css">\n  </head>\n  <body>\n    <div class="container">\n      <div class="jumbotron">\n        <img src="https://avatars.githubusercontent.com/u/6801122?v=3&amp;s=128" alt="Eduardo Mendes" class="img-circle">\n        <h1>Eduardo Mendes</h1>\n        <p>Apaixonado por software livre e criador de lambdas.</p>\n        <p><a class="btn btn-primary btn-lg" href="http://github.com/z4r4tu5tr4"\n            role="button">Me siga no GitHub</a></p>\n      </div>\n    </div>\n  </body>\n</html>'
+
+======================================================================
+FAIL: test_link (__main__.TestHome)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "tests.py", line 34, in test_link
+    self.assertIn('href="http://twitter.com/cuducos"', response_str)
+AssertionError: 'href="http://twitter.com/cuducos"' not found in '<!DOCTYPE HTML>\n<html>\n  <head>\n    <title>Eduardo Mendes</title>\n    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css">\n  </head>\n  <body>\n    <div class="container">\n      <div class="jumbotron">\n        <img src="https://avatars.githubusercontent.com/u/6801122?v=3&amp;s=128" alt="Eduardo Mendes" class="img-circle">\n        <h1>Eduardo Mendes</h1>\n        <p>Apaixonado por software livre e criador de lambdas.</p>\n        <p><a class="btn btn-primary btn-lg" href="http://github.com/z4r4tu5tr4"\n            role="button">Me siga no GitHub</a></p>\n      </div>\n    </div>\n  </body>\n</html>'
+
+----------------------------------------------------------------------
+Ran 6 tests in 0.024s
+
+FAILED (failures=2)
+```
+
+Os testes nos dizem que bagunçamos as informações. Os testes de conteúdo não encontram mais `Eduardo Cuducos` na página, nem o link para `http://twitter.com/cuducos`.
+
+Vamos arrumar isso fazendo um caso de teste para cada perfil. Vamos mudar também nosso esquema de URL. Ao invés de testar a raíz da aplicação, vamos testar se em `/nome-do-usuário` vemos as informações desse usuário.
+
+Vamos renomear `TestGet` para `TestCuducos` e mudar a URL no `setUp()`:
+
+```python
+class TestCuducos(unittest.TestCase):
+
+    def setUp(self):
+        app = meu_web_app.test_client()
+        self.response = app.get('/cuducos')
+```
+
+Agora podemos duplicar toda essa classe renomeando-a para `TestZ4r4tu5tr4`, substituindo as informações pertinentes:
+
+```python
+class TestZ4r4tu5tr4(unittest.TestCase):
+
+    def setUp(self):
+        app = meu_web_app.test_client()
+        self.response = app.get('/z4r4tu5tr4')
+
+    def test_get(self):
+        self.assertEqual(200, self.response.status_code)
+
+    def test_content_type(self):
+        self.assertIn('text/html', self.response.content_type)
+
+    def test_content(self):
+        response_str = self.response.data.decode('utf-8')
+        self.assertIn('<title>Eduardo Mendes</title>', str(response_str))
+        self.assertIn('<h1>Eduardo Mendes</h1>', str(response_str))
+        self.assertIn('<p>Apaixonado por software livre', str(response_str))
+
+    def test_bootstrap_css(self):
+        response_str = self.response.data.decode('utf-8')
+        self.assertIn('bootstrap.min.css', response_str)
+
+    def test_profile_image(self):
+        response_str = self.response.data.decode('utf-8')
+        self.assertIn('<img src="', response_str)
+        self.assertIn('class="img-circle"', response_str)
+
+    def test_link(self):
+        response_str = self.response.data.decode('utf-8')
+        self.assertIn('href="http://github.com/z4r4tu5tr4"', response_str)
+        self.assertIn('>Me siga no GitHub</a>', response_str)
+```
+
+Testes prontos… e falhando, claro. Não mudamos nosso esquema de URLs no Flask. Voltemos ao `app.py`:
+
+```pyhton
+@meu_web_app.route('/<perfil>')
+def pagina_inicial(perfil):
+    perfil = PERFIS[perfil]
+    return render_template('home.html', perfil=perfil)
+```
+
+Agora temos nossa aplicação com conteúdo dinâmico, com testes passando e funcionando!
+
