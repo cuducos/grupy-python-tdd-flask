@@ -248,3 +248,198 @@ class TestHome(unittest.TestCase):
     def test_content_type(self):
         self.assertIn('text/html', self.response.content_type)
 ```
+
+## 4. Preenchendo a página
+
+### Conteúdo como resposta
+
+Temos um servidor web funcionando, mas não vemos nada na nossa aplicação web. Podemos verificar isso em três passos rápidos:
+
+Primeiro adicionamos essas linhas ao `app.py`:
+
+```python
+if __name__ == "__main__":
+    meu_web_app.run()
+```
+
+Depois executamos o arquivo:
+
+```console
+$ python app.py
+```
+
+Assim vemos no terminal essa mensagem:
+
+```
+ * Running on http://127.0.0.1:5000/ (Press CTRL+C to quit)
+```
+
+Se acessarmos essa URL no nosso navegador, podemos ver a aplicação rodando: [http://127.0.0.1:5000/](http://127.0.0.1:5000/).
+
+E veremos que realmente não há nada, é uma página em branco.
+
+Vamos mudar isso! Vamos construir o que seria uma página individual, mostrando quem a gente é. Na minha vou querer que esteja escrito (ao menos), meu nome. Então vamos escrever um teste para isso:
+
+```python
+def test_content(self):
+    self.assertIn('Eduardo Cuducos', self.response.data)
+```
+
+Feito isso, teremos uma nova mensagem de erro nos testes:
+
+```
+TypeError: a bytes-like object is required, not 'str'
+```
+
+Essa mensagem nos diz que estamos comparando uma _string_ com um objeto que é de outro tipo, que é representado por _bytes_. Não é isso que queremos. Como explicitamente criamos uma _string_ com nosso nome, podemos assumir que é o `self.response.data` que vem codificado em _bytes_. Vamos decodificá-lo para _string_.
+
+> _Bytes precisam ser decodificados para string (método `decode`). Strings precisam ser codificados para bytes para então mandarmos o conteúdo para o disco, para a rede (método `encode`)._
+>
+> — [Henrique Bastos](http://henriquebastos.net)
+
+```python
+def test_content(self):
+    self.assertIn('Eduardo Cuducos', self.response.data.decode('utf-8'))
+```
+
+Assim temos uma nova mensagem de erro:
+
+```
+AssertionError: 'Eduardo Cuducos' not found in "b''"
+```
+
+Nossa página está vazia, logo o teste não consegue encontrar meu nome na página. Vamos resolver isso lá no `app.py`:
+
+```python
+@meu_web_app.route('/')
+def pagina_inicial():
+    return 'Eduardo Cuducos'
+```
+
+Agora temos os testes passando, e podemos verificar isso vendo que temos o nome na tela do navegador.
+
+```
+...
+----------------------------------------------------------------------
+Ran 3 tests in 0.015s
+
+OK
+```
+
+### Apresentando o conteúdo com HTML
+
+O Python e o Flask cuidam principalmente do back-end da apliacação web — o que ocorre “por trás dos panos” no lado do servidor.
+
+Mas temos também o front-end, que é o que o usuário vê, a interface com a qual o usuário interage. Normalmente o front-end é papel de outras linguagens, como o HTML, o CSS e o JavaScript.
+
+Vamos começar um um HTML básico, criando a pasta `templates` e dentro dela o arquivo `home.html`:
+
+```html
+<!DOCTYPE HTML>
+<html>
+  <head>
+	<title>Eduardo Cuducos</title>
+  </head>
+  <body>
+    <h1>Eduardo Cuducos</h1>
+    <p>Sociólogo, geek, cozinheiro e fã de esportes.</p>
+  </body>
+</html>
+```
+
+Se a gente abrir essa página no navegador já podemos ver que ela é um pouco menos feia que a da nossa aplicação. Então vamos aterar nosso `test_content()` para garantir que ao invés de termos somente a _string_ com nosso nome na aplicação, tempos esse templete renderizado:
+
+```python
+def test_content(self):
+    response_str = self.response.data.decode('utf-8')
+    self.assertIn('<title>Eduardo Cuducos</title>', str(response_str))
+    self.assertIn('<h1>Eduardo Cuducos</h1>', str(response_str))
+    self.assertIn('<p>Sociólogo, ', str(response_str))
+```
+
+Assim vemos nossos testes falharem:
+
+```
+F..
+======================================================================
+FAIL: test_content (__main__.TestHome)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "tests.py", line 18, in test_content
+    self.assertIn('<title>Eduardo Cuducos</title>', str(self.response.data))
+AssertionError: '<title>Eduardo Cuducos</title>' not found in "b'Eduardo Cuducos'"
+
+----------------------------------------------------------------------
+Ran 3 tests in 0.017s
+
+FAILED (failures=1)
+```
+
+Criamos nossa `home.html` dentro da pasta `templates` pois é justamente lá que o Flask vai buscar templates. Sabendo disso, podemos fazer nosso método `index()` retornar não só a string, mas o template:
+
+```python
+from flask import Flask, render_template
+
+…
+
+@meu_web_app.route('/')
+def pagina_inicial():
+    return render_template('home.html')
+```
+
+Assim testes passam e a página fica um pouco mais apresentável.
+
+### Formatando o conteúdo com CSS
+
+Para não perder muito o foco do Python, TDD e Flask, vamos utilizar um framework CSS que se chama [Bootstrap](http://getbootstrap.com/). Incluindo o CSS desse framework no nosso HTML, e utilizando algumas classes especificas dele, conseguimos dar uma cara nova para nossa aplicação.
+
+Vamos escrever um teste para verificar se estamos mesmo carregando o Bootstrap:
+
+```python
+def test_bootstrap_css(self):
+    response_str = self.response.data.decode('utf-8')
+    self.assertIn('bootstrap.min.css', response_str)
+```
+
+Os testes falham. Temos que linkar o CSS do Bootstrap em nosso HTML. Ao invés de baixar o Bootstrap, vamos utilizar o [servidor CDN que eles mesmo recomendam](http://getbootstrap.com/getting-started/#download-cdn). É só incluir essa linha no `<head>` do nosso HTML:
+
+```html
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css">
+```
+
+Agora, com os testes passando, vamos utilizar as classes do Bootstrap para formatar melhor nossa página. Vamos retirar nosso `<h1>` e `<p>` e, ao invés disso, partir do componente [Jumbotron](http://getbootstrap.com/components/#jumbotron) fazendo algumas pequenas alterações:
+
+```html
+<div class="container">
+  <div class="jumbotron">
+    <img src="https://avatars.githubusercontent.com/u/4732915?v=3&s=128" alt="Eduardo Cuducos" class="img-circle">
+    <h1>Eduardo Cuducos</h1>
+    <p>Sociólogo, geek, cozinheiro e fã de esportes.</p>
+    <p><a class="btn btn-primary btn-lg" href="http://twitter.com/cuducos" role="button">Me siga no Twitter</a></p>
+  </div>
+</div>
+```
+
+Com essa página “incrementada” podemos ainda refinar nossos testes, garantindo que sempre temos a foto e o link:
+
+```python
+def test_profile_image(self):
+    response_str = self.response.data.decode('utf-8')
+    self.assertIn('<img src="', response_str)
+    self.assertIn('class="img-circle"', response_str)
+
+def test_link(self):
+    response_str = self.response.data.decode('utf-8')
+    self.assertIn('href="http://twitter.com/cuducos"', response_str)
+    self.assertIn('>Me siga no Twitter</a>', response_str)
+```
+
+Pronto, agora temos uma página formatada para mostrar para nossos colegas, com todos os testes passando:
+
+```
+......
+----------------------------------------------------------------------
+Ran 6 tests in 0.024s
+
+OK
+```
