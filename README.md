@@ -68,7 +68,6 @@ class TestFatorial(unittest.TestCase):
         self.assertEqual(fatorial(4), 24)
         self.assertEqual(fatorial(5), 120)
         self.assertEqual(fatorial(6), 720)
-        
 
 if __name__ == '__main__':
     unittest.main()
@@ -123,4 +122,129 @@ Rodando os testes agora, vemos que a integração entre `app.py` e `tests.py` es
 Ran 1 test in 0.000s
 
 OK
+```
+
+## 3. Primeiros passos para a aplicação web
+
+### Criando um servidor web
+
+Como nosso foco é começar uma aplicação web, podemos descartar nossos testes e nosso método que criamos no passo anterior. Ao invés disso, vamos escrever um teste simples, para ver se conseguimos fazer o Flask criar um servidor web.
+
+Descarte tudo do `tests.py` substituindo por essas linhas:
+
+```python
+import unittest
+from app import meu_web_app
+
+
+class TestHome(unittest.TestCase):
+
+    def test_get(self):
+        app = meu_web_app.test_client()
+        response = app.get('/')
+        self.assertEqual(200, response.status_code)
+        
+if __name__ == '__main__':
+    unittest.main()
+```
+
+Esse arquivo agora faz quatro coisas referentes a nossa aplicação web:
+
+1. Importa o objeto `meu_web_app` (que ainda não criamos) do nosso arquivo `app.py`;
+1. Cria uma instância da nossa aplicação web específica para nossos testes (batizamos essa instância de `app`);
+1. Tenta acessar a “raíz” da nossa aplicação — ou seja, se essa aplicação web estivesse no servidor `meuservidor.org.br` estaríamos acessando [http://meuservidor.org.br/](http://meuservidor.org.br).
+1. Verifica se ao acessar essa URL, ou seja, se ao fazer a requisição HTTP, temos como resposta o código 200, que representa sucesso.
+
+Os códigos de status de requisição HTTP mais comuns são o `200` (sucesso), `404` (página não encontrada) e `302` (redirecionamento) — mas a [lista de completa](https://pt.wikipedia.org/wiki/Lista_de_códigos_de_status_HTTP) é muito maior que isso. 
+
+De qualquer forma não conseguiremos rodar esses testes. O Python vai dar erro:
+
+```
+ImportError: cannot import name 'meu_web_app'
+```
+
+Então vamos criar o objeto `meu_web_app` lá no `app.py`. Descartamos tudo que tínhamos lá substituindo por essas linhas:
+
+```python
+from flask import Flask
+
+meu_web_app = Flask(__name__)
+```
+
+Apenas estamos importando a classe principal do Flask, e criando uma instância dela. Em outras palavras, estamos começando a utilizar o framework.
+
+E agora o erro muda:
+
+```
+F
+======================================================================
+FAIL: test_get (__main__.TestHome)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "tests.py", line 10, in test_get
+    self.assertEqual(200, response.status_code)
+AssertionError: 200 != 404
+
+----------------------------------------------------------------------
+Ran 1 test in 0.015s
+
+FAILED (failures=1)
+```
+
+Temos uma aplicação web rodando, mas quando tentamos acessar a raíz dela, ela nos diz que a página não está definida, não foi encontrada (é o que nos diz o código `404`).
+
+### Criando nossa primeira página
+
+O Flask facilita muito a criação de aplicações web. De forma simplificada qualquer método Python pode ser atribuído a uma URL dessa forma:
+
+```
+@app.route('/')
+def pagina_inicial():
+    return ''
+```
+
+Adicionando essas linhas no `app.py`, os testes passam:
+
+```
+.
+----------------------------------------------------------------------
+Ran 1 test in 0.013s
+
+OK
+```
+
+Se a curiosidade for grande, esse artigo (em inglês) explica direitinho como o `Flask.route(rule, **options)` faz e como ele funciona: [Things which aren't magic - Flask and @app.route](http://ains.co/blog/things-which-arent-magic-flask-part-1.html).
+
+Para garantir que tudo está certinho mesmo, podemos adicionar mais um teste. Queremos que a resposta do servidor seja um HTML:
+
+```python
+def test_content_type(self):
+    app = meu_web_app.test_client()
+    response = app.get('/')
+    self.assertIn('text/html', response.content_type)
+```
+
+### Eliminando repetições
+
+Repararam que duas linhas se repetem nos métodos `test_get()` e `test_content_type()`?
+
+```python
+app = meu_web_app.test_client()
+response = app.get('/')
+```
+
+Podemos usar um método especial da classe `TestCase` para reaporiveitar esse código. O método `TestCase.setUp()` é executado a cada teste, e através do `self` podemos acessar objetos de um método a partir de outro método:
+
+```python
+class TestHome(unittest.TestCase):
+
+    def setUp(self):
+        app = meu_web_app.test_client()
+        self.response = app.get('/')
+
+    def test_get(self):
+        self.assertEqual(200, self.response.status_code)
+
+    def test_content_type(self):
+        self.assertIn('text/html', self.response.content_type)
 ```
