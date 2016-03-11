@@ -604,3 +604,16 @@ def pagina_inicial(perfil):
 
 Agora temos nossa aplicação com conteúdo dinâmico, com testes passando e funcionando!
 
+## Considerações finais
+
+Essa palestra tem apenas o objetivo de introduzir a ideia básica do _test-driven development_ (TDD) e de introduzir um mínimo sobre o Flask. 
+
+Leituras recomendadas para conhecer mais sobre Flask:
+
+* Em português: [Tutorial](http://pythonclub.com.br/what-the-flask-pt-1-introducao-ao-desenvolvimento-web-com-python) (ainda incompleto) do [Bruno Rocha](https://twitter.com/rochacbruno)
+* Em inglês: [Tutorial](http://blog.miguelgrinberg.com/post/the-flask-mega-tutorial-part-i-hello-world) ou [livro](http://flaskbook.com) do [Miguel Grinberg](https://twitter.com/miguelgrinberg)
+
+Leitura recomendada para conhecer mais sobre TDD:
+
+* Em inglês: [Livro](http://shop.oreilly.com/product/0636920029533.do) do [Harry Percival](https://twitter.com/hjwp)
+* Em inglês: essa [resposta](http://stackoverflow.com/questions/4904096/whats-the-difference-between-unit-functional-acceptance-and-integration-test/4904533#4904533) no Stack Overflow sobre _unit_, _integration_, _functional_ e _acceptance test_
