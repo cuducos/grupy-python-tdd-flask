@@ -1,13 +1,19 @@
 
 # Python com TDD e desenvolvimento de aplicações web com Flask
 
-Palestra para [encontro](http://www.meetup.com/Grupy-SP/events/228437612/) do [Grupy-SP](https://groups.google.com/forum/#!forum/grupy-sp) em 12 de março de 2016.
+> Baseado na palestra que ofereci no [encontro](http://www.meetup.com/Grupy-SP/events/228437612/) do [Grupy-SP](https://groups.google.com/forum/#!forum/grupy-sp), em 12 de março de 2016.
+
+A ideia desse exercício é introduzir a ideia de _test driven development_ (TDD) usando [Python](http://http://python.org) e [Flask](http://flask.pocoo.org/) — digo isso pois a aplicação final desse “tutorial” não é nada avançada, tampouco funcional. E isso se explica por dois motivos: primeiro, o foco é sentir o que é o _driven_ do TDD, ou seja, como uma estrutura de _tests first_ (sempre começar escrevendo os testes, e não a aplicação) pode guiar o processo de desenvolvimento; e, segundo, ser uma atividade rápida, de mais ou menos 1h.
+
+Em outras palavras, não espere aprender muito de Python ou Flask. Aqui se concentre em sentir a diferença de utilizar uma método de programar. Todo o resto é secundário.
 
 ## 1. Preparando o ambiente
 
 ### Requisitos
 
-Para esse exercício usaremos o [Python](http://http://python.org) versão 3.5.1 e com o framework [Flask](http://flask.pocoo.org/). É recomendado, mas não necessário, usar um [virtualenv](http://virtualenv.readthedocs.org).
+Para esse exercício usaremos o Python versão 3.5.1 com o framework Flask versão 0.10.1. É recomendado, mas não necessário, usar um [virtualenv](http://virtualenv.readthedocs.org).
+
+> Como o código é bem simples, não acho que você vá ter muitos problemas se utilizar uma versão mais antiga do Python (ou mesmo do Flask). Em todo caso, em um detalhe ou outro você pode se deparar com mensagens distintas se utilizar o Python 2.
 
 Você pode verificar a versão do seu Python com esse comando:
 
@@ -52,7 +58,11 @@ Vamos usar, nesse exercício, basicamente 2 arquivos:
 
 No arquivo `tests.py` vamos usar o módulo [unittest](https://docs.python.org/3.5/library/unittest.html), que já vem instalado por padrão no Python.
 
-Criaremos uma estrutura básica para que, toda vez que esse arquivo seja executado, o `unittest` se encarregue de encontrar todos os nossos testes e rodá-los:
+Criaremos uma estrutura básica para que, toda vez que esse arquivo seja executado, o `unittest` se encarregue de encontrar todos os nossos testes e rodá-los.
+
+Vamos começar escrevendo com uma exemplo fictício: testes para um método que ainda não criamos, um método que calcule números fatoriais. A ideia é só entender como escreveremos testes em um arquivo (`tests.py`) para testar o que escreveremos no outro arquivo (`app.py`).
+
+A estrutura básica a seguir cria um caso de teste da `unittest` e, quado executada, teste nosso método `fatorial(numero)` para todos os números de 0 até 6:
 
 ```python
 import unittest
@@ -73,13 +83,15 @@ if __name__ == '__main__':
     unittest.main()
 ```
 
+Se você conhece um pouco de inglês, pode ler o código em voz alta, ele é quase auto explicativo: importamos o módulo _unittest_ (linha 1), criamos um objeto que é um caso de teste do método fatorial (linha 4), escrevemos um método de teste (linha 6) e esse método se assegura de que o retorno de `fatorial(numero)` é o resultado que esperamos (linhas 5 a 11).
+
 Agora podemos rodar os testes assim:
 
 ```console
 $ python testes.py
 ```
 
-Veremos uma mensagem de erro, `NameError`, pois não definimos nossa função `fatorial(num)`:
+Veremos uma mensagem de erro, `NameError`, pois não definimos nossa função `fatorial(numero)`:
 
 ```
 E
@@ -114,7 +126,7 @@ E adicionar essa linha no topo do `tests.py`:
 from app import fatorial
 ```
 
-Rodando os testes agora, vemos que a integração entre `app.py` e `tests.py` está funcionando:
+Agora, rodando os testes vemos que a integração entre `app.py` e `tests.py` está funcionando:
 
 ```
 .
@@ -124,13 +136,15 @@ Ran 1 test in 0.000s
 OK
 ```
 
+Ótimo. Chega de matemática, vamos ao TDD com Flask, um caso muito mais tangível do que encontramos no nosso dia-a-dia.
+
 ## 3. Primeiros passos para a aplicação web
 
 ### Criando um servidor web
 
-Como nosso foco é começar uma aplicação web, podemos descartar nossos testes e nosso método que criamos no passo anterior. Ao invés disso, vamos escrever um teste simples, para ver se conseguimos fazer o Flask criar um servidor web.
+Como nosso foco é começar uma aplicação web, podemos descartar os testes e o método fatorial que criamos no passo anterior. Ao invés disso, vamos escrever um teste simples, para ver se conseguimos fazer o Flask criar um servidor web.
 
-Descarte tudo do `tests.py` substituindo por essas linhas:
+Descarte tudo do `tests.py` substituindo o conteúdo do arquivo por essas linhas:
 
 ```python
 import unittest
@@ -151,29 +165,50 @@ if __name__ == '__main__':
 Esse arquivo agora faz quatro coisas referentes a nossa aplicação web:
 
 1. Importa o objeto `meu_web_app` (que ainda não criamos) do nosso arquivo `app.py`;
-1. Cria uma instância da nossa aplicação web específica para nossos testes (batizamos essa instância de `app`);
-1. Tenta acessar a “raíz” da nossa aplicação — ou seja, se essa aplicação web estivesse no servidor `meuservidor.org.br` estaríamos acessando [http://meuservidor.org.br/](http://meuservidor.org.br).
-1. Verifica se ao acessar essa URL, ou seja, se ao fazer a requisição HTTP, temos como resposta o código 200, que representa sucesso.
+1. Cria uma instância da nossa aplicação web específica para nossos testes (é o método `meu_web_app.test_client()`, cujo retorno batizamos de `app`);
+1. Tenta acessar a “raíz” da nossa aplicação — ou seja, se essa aplicação web estivesse no servidor `pythonclub.com.br` estaríamos acessando [http://pythonclub.com.br/](http://pythonclub.com.br/).
+1. Verifica se, ao acessar esse endereço, ou seja, se ao fazer a requisição HTTP para essa URL, temos como resposta o código 200, que representa sucesso.
 
 Os códigos de status de requisição HTTP mais comuns são o `200` (sucesso), `404` (página não encontrada) e `302` (redirecionamento) — mas a [lista de completa](https://pt.wikipedia.org/wiki/Lista_de_códigos_de_status_HTTP) é muito maior que isso. 
 
-De qualquer forma não conseguiremos rodar esses testes. O Python vai dar erro:
+De qualquer forma não conseguiremos rodar esses testes. O interpretador do Python vai nos retornar um erro:
 
 ```
 ImportError: cannot import name 'meu_web_app'
 ```
 
-Então vamos criar o objeto `meu_web_app` lá no `app.py`. Descartamos tudo que tínhamos lá substituindo por essas linhas:
+Então vamos criar o objeto `meu_web_app` lá no `app.py`. Descartamos tudo que tínhamos lá substituindo o contéudo do arquivo por essas linhas:
 
 ```python
 from flask import Flask
 
-meu_web_app = Flask(__name__)
+meu_web_app = Flask()
 ```
 
 Apenas estamos importando a classe principal do Flask, e criando uma instância dela. Em outras palavras, estamos começando a utilizar o framework.
 
 E agora o erro muda:
+
+```
+Traceback (most recent call last):
+  File "tests.py", line 2, in <module>
+    from app import meu_web_app
+  File "/Users/cuducos/Desktop/flask/app.py", line 3, in <module>
+    meu_web_app = Flask()
+TypeError: __init__() missing 1 required positional argument: 'import_name'
+```
+
+Importamos nosso `meu_web_app`, mas quando instanciamos o Flask temos um problema. Qual problema? O erro nos diz: quando tentamos chamar `Flask()` na linha 3 do `app.py` está faltando um argumento posicional obrigatório (_missing 1 required positional argument_). Estamos chamando `Flask()` sem nenhum argumento. O erro ainda nos diz que o que falta é um nome (_import_name_). Vamos batizar nossa instância com um nome:
+
+```python
+meu_web_app = Flask(`meu_web_app`)
+```
+
+E agora temos uma nova mensagem de erro, ou seja, progresso!
+
+> Eu amo testes que falham! A melhor coisa é uma notificação em vermelho me dizendo que os testes estão falhando. Isso significa que eu tenho testes e que eles estão funcionando!
+> 
+> — [Bruno Rocha](https://twitter.com/rochacbruno)
 
 ```
 F
@@ -195,7 +230,7 @@ Temos uma aplicação web rodando, mas quando tentamos acessar a raíz dela, ela
 
 ### Criando nossa primeira página
 
-O Flask facilita muito a criação de aplicações web. De forma simplificada qualquer método Python pode ser atribuído a uma URL dessa forma:
+O Flask facilita muito a criação de aplicações web. De forma simplificada a qualquer método Python pode ser atribuída uma URL. Isso é feito com um decorador:
 
 ```
 @app.route('/')
@@ -213,7 +248,7 @@ Ran 1 test in 0.013s
 OK
 ```
 
-Se a curiosidade for grande, esse artigo (em inglês) explica direitinho como o `Flask.route(rule, **options)` faz e como ele funciona: [Things which aren't magic - Flask and @app.route](http://ains.co/blog/things-which-arent-magic-flask-part-1.html).
+Se a curiosidade for grande, esse artigo (em inglês) explica direitinho como o `Flask.route(rule, **options)` funciona: [Things which aren't magic - Flask and @app.route](http://ains.co/blog/things-which-arent-magic-flask-part-1.html).
 
 Para garantir que tudo está certinho mesmo, podemos adicionar mais um teste. Queremos que a resposta do servidor seja um HTML:
 
@@ -224,6 +259,8 @@ def test_content_type(self):
     self.assertIn('text/html', response.content_type)
 ```
 
+Rodando os testes, veremos que agora temos dois testes. E ambos passam!
+
 ### Eliminando repetições
 
 Repararam que duas linhas se repetem nos métodos `test_get()` e `test_content_type()`?
@@ -233,7 +270,7 @@ app = meu_web_app.test_client()
 response = app.get('/')
 ```
 
-Podemos usar um método especial da classe `TestCase` para reaporiveitar esse código. O método `TestCase.setUp()` é executado a cada teste, e através do `self` podemos acessar objetos de um método a partir de outro método:
+Podemos usar um método especial da classe `unittest.TestCase` para reaporiveitar essas linhas. O método `TestCase.setUp()` é executado ao iniciar cada teste, e através do `self` podemos acessar objetos de um método a partir de outro método:
 
 ```python
 class TestHome(unittest.TestCase):
@@ -249,13 +286,15 @@ class TestHome(unittest.TestCase):
         self.assertIn('text/html', self.response.content_type)
 ```
 
+Não vamos precisar nesse exemplo, mas o método `TestCase.tearDown()` é executado ao fim de cada teste (e não no início, como a `setUp()`). Ou seja, se precisar repetir algum comando sempre após cada teste, a `unittest` também faz isso para você.
+
 ## 4. Preenchendo a página
 
 ### Conteúdo como resposta
 
 Temos um servidor web funcionando, mas não vemos nada na nossa aplicação web. Podemos verificar isso em três passos rápidos:
 
-Primeiro adicionamos essas linhas ao `app.py`:
+Primeiro adicionamos essas linhas ao `app.py` para que, quando executarmos o `app.py` (mas não quando ele for importado no `tests.py`), a aplicação web seja iniciada:
 
 ```python
 if __name__ == "__main__":
@@ -291,7 +330,7 @@ Feito isso, teremos uma nova mensagem de erro nos testes:
 TypeError: a bytes-like object is required, not 'str'
 ```
 
-Essa mensagem nos diz que estamos comparando uma _string_ com um objeto que é de outro tipo, que é representado por _bytes_. Não é isso que queremos. Como explicitamente criamos uma _string_ com nosso nome, podemos assumir que é o `self.response.data` que vem codificado em _bytes_. Vamos decodificá-lo para _string_.
+Essa mensagem nos diz que estamos comparando uma _string_ com um objeto que é de outro tipo, que é representado por _bytes_. Não é isso que queremos. Como explicitamente passamos para o teste uma _string_ com nosso nome, podemos assumir que é o `self.response.data` que vem codificado em _bytes_. Vamos decodificá-lo para _string_.
 
 > _Bytes precisam ser decodificados para string (método `decode`). Strings precisam ser codificados para bytes para então mandarmos o conteúdo para o disco, para a rede (método `encode`)._
 >
@@ -332,7 +371,7 @@ O Python e o Flask cuidam principalmente do back-end da apliacação web — o 
 
 Mas temos também o front-end, que é o que o usuário vê, a interface com a qual o usuário interage. Normalmente o front-end é papel de outras linguagens, como o HTML, o CSS e o JavaScript.
 
-Vamos começar um um HTML básico, criando a pasta `templates` e dentro dela o arquivo `home.html`:
+Vamos começar com um HTML básico, criando a pasta `templates` e dentro dela o arquivo `home.html`:
 
 ```html
 <!DOCTYPE HTML>
@@ -347,7 +386,7 @@ Vamos começar um um HTML básico, criando a pasta `templates` e dentro dela o a
 </html>
 ```
 
-Se a gente abrir essa página no navegador já podemos ver que ela é um pouco menos feia que a da nossa aplicação. Então vamos aterar nosso `test_content()` para garantir que ao invés de termos somente a _string_ com nosso nome na aplicação, tempos esse templete renderizado:
+Se a gente abrir essa página no navegador já podemos ver que ela é um pouco menos do que o que a gente tinha antes. Então vamos alterar nosso `test_content()` para garantir que ao invés de termos somente a _string_ com nosso nome na aplicação, tempos esse templete renderizado:
 
 ```python
 def test_content(self):
@@ -375,7 +414,7 @@ Ran 3 tests in 0.017s
 FAILED (failures=1)
 ```
 
-Criamos nossa `home.html` dentro da pasta `templates` pois é justamente lá que o Flask vai buscar templates. Sabendo disso, podemos fazer nosso método `index()` retornar não só a string, mas o template:
+Criamos um HTML, mas ainda não estamos pedindo para o Flask utilizá-lo. Temos nossa `home.html` dentro da pasta `templates` pois é justamente lá que o Flask vai buscar templates. Sabendo disso, podemos fazer nosso método `index()` retornar não a string, mas o template:
 
 ```python
 from flask import Flask, render_template
@@ -387,7 +426,7 @@ def pagina_inicial():
     return render_template('home.html')
 ```
 
-Assim testes passam e a página fica um pouco mais apresentável.
+Assim voltamos a ter testes passando — e a página fica um pouco mais apresentável.
 
 ### Formatando o conteúdo com CSS
 
@@ -449,9 +488,9 @@ OK
 
 ### Passando variáveis para o contexto do template
 
-O problema da nossa página é que ela é estática. Vamos usar o Python e o Flask para que quando a gente acesse `/cuducos` a gente veja a minha página, com meus dados. Mas caso a gente acesse `/z4r4tu5tr4`, a gente o conteúdo referente ao outro Eduardo.
+O problema da nossa página é que ela é estática. Vamos usar o Python e o Flask para que quando a gente acesse `/cuducos` a gente veja a minha página, com meus dados. Mas caso a gente acesse `/z4r4tu5tr4`, a gente o conteúdo referente ao outro Eduardo que palestrou no Grupy comigo.
 
-Mas antes de mudar nossas URLS, vamos refatorar nossa aplicação e os testes tem que continuar passando. A ideia é evitar que o conteúdo esteja “fixo” no template. Vamos fazer o conteúdo ser passado pela `pagina_principal()` para o template.
+Antes de mudar nossas URLS, vamos refatorar nossa aplicação e — importantíssimo! — os testes tem que continuar passando. A ideia é evitar que o conteúdo esteja “fixo” no template. Vamos fazer o conteúdo ser passado do método `pagina_principal()` para o template.
 
 A ideia é extrair todo o conteúdo do nosso HTML criando um dicionário no `app.py`:
 
@@ -494,6 +533,8 @@ Por fim, vamor utilizar, ao invés das minhas informações, a variável `perfil
 </html>
 ```
 
+Feito isso, temos todas as informações disponíveis no nosso ambinete Python, e não mais no HTML. E os testes nos garantem que no final das contas, para o usuário, a página não mudou — ou seja, estamos mostrando as informações corretamente.
+
 ### Criando conteúdo dinâmico
 
 Vamos agora criar um outro dicionário para termos informações de outras pessoas. E vamos juntar todos os perfis em uma variável chamada `PERFIS`:
@@ -509,7 +550,7 @@ PERFIS = {'cuducos': CUDUCOS,
           'z4r4tu5tr4': MENDES}
 ```
 
-Agora, se utilizarmos nossa `pagina_principal()` com o primeiro perfil, nossos testes passam. Podemos passar o outro perfil e ver ,no navegador, que já temos a nossa página com outras informações:
+Agora, se utilizarmos nossa `pagina_principal()` com o primeiro perfil, nossos testes passam. Podemos passar o outro perfil e ver, no navegador, que já temos a nossa página com outras informações:
 
 ```python
 @meu_web_app.route('/')
@@ -593,7 +634,26 @@ class TestZ4r4tu5tr4(unittest.TestCase):
         self.assertIn('>Me siga no GitHub</a>', response_str)
 ```
 
-Testes prontos… e falhando, claro. Não mudamos nosso esquema de URLs no Flask. Voltemos ao `app.py`:
+Testes prontos… e falhando, claro. Não mudamos nosso esquema de URLs no Flask. Voltemos ao `app.py`.
+
+Podemos começar com algo repetitivo, mas simples:
+
+```pyhton
+@meu_web_app.route('/cuducos')
+def pagina_inicial_cuducos():
+    perfil = PERFIS['cuducos']
+    return render_template('home.html', perfil=perfil)
+
+
+@meu_web_app.route('/z4r4tu5tr4')
+def pagina_inicial_z4r4tu5tr4():
+    perfil = PERFIS['z4r4tu5tr4']
+    return render_template('home.html', perfil=perfil)
+```
+
+Como resultado, temos nossa aplicação com conteúdo dinâmico, com testes passando e funcionando!
+
+Podemos melhorar um pouco mais. Essa repetição dos métodos `pagina_inicial_cuducos()` e `pagina_inicial_z4r4tu5tr4()` é facilmente evitada no Flask:
 
 ```pyhton
 @meu_web_app.route('/<perfil>')
@@ -602,11 +662,13 @@ def pagina_inicial(perfil):
     return render_template('home.html', perfil=perfil)
 ```
 
-Agora temos nossa aplicação com conteúdo dinâmico, com testes passando e funcionando!
+Agora o Flask recebe uma variável `perfil` depois da `/` (e sabemos que é uma variável pois envolvemos o nome `perfil` entre os sinais de `<` e `>`). E utilizamos essa variável para escolhar qual perfil passar para nosso tempate.
 
 ## Considerações finais
 
-Essa palestra tem apenas o objetivo de introduzir a ideia básica do _test-driven development_ (TDD) e de introduzir um mínimo sobre o Flask. 
+Se chegou até aqui, vale a pena ressaltar que esse post tem apenas o objetivo de introduzir a ideia básica do TDD. Ou seja: ver como o hábito, o método de programar pouco a pouco (_baby steps_) e sempre começando com os testes te dão dois benefícios sensacionais: eles não só garantem que a aplicação funcionará como esperado, mas eles guiam o próprio processo de desenvolvimento. As mensagens de erro te dizer – muitas vezes literalmente — o qual é a próxima linha de código que você vai escrever.
+
+E, se chegou até aqui, talvez você queira se aprofundar nos assuntos dos quais falamos. Além de inúmeros posts aqui do blog, ressalto mais algumas referências.
 
 Leituras recomendadas para conhecer mais sobre Flask:
 
@@ -616,4 +678,8 @@ Leituras recomendadas para conhecer mais sobre Flask:
 Leitura recomendada para conhecer mais sobre TDD:
 
 * Em inglês: [Livro](http://shop.oreilly.com/product/0636920029533.do) do [Harry Percival](https://twitter.com/hjwp)
-* Em inglês: essa [resposta](http://stackoverflow.com/questions/4904096/whats-the-difference-between-unit-functional-acceptance-and-integration-test/4904533#4904533) no Stack Overflow sobre _unit_, _integration_, _functional_ e _acceptance test_
+* Em inglês: essa [resposta](http://stackoverflow.com/questions/4904096/whats-the-difference-between-unit-functional-acceptance-and-integration-test/4904533#4904533) no Stack Overflow sobre _unit_, _integration_, _functional_ e _acceptance test_.
+
+> Quem aprendeu alguma coisa nova?
+>
+> — [Raymond Hettinger](https://twitter.com/raymondh)

@@ -1,6 +1,6 @@
 from flask import Flask, render_template
 
-meu_web_app = Flask(__name__)
+meu_web_app = Flask('meu_web_app')
 
 CUDUCOS = {'nome': 'Eduardo Cuducos',
            'descricao': 'Sociólogo, geek, cozinheiro e fã de esportes.',
